@@ -6,7 +6,8 @@ import { getMovies } from "../services/fakeMovieService";
 import { getGenres } from "../services/fakeGenreService";
 import { paginate } from "../utils/paginate";
 import PrimaryButton from "./common/primaryButton";
-import { NavLink } from "react-router-dom";
+import { Link } from "react-router-dom";
+import SearchBox from "./searchBox";
 import _ from "lodash";
 
 class Movies extends Component {
@@ -16,6 +17,8 @@ class Movies extends Component {
     currentPage: 1,
     pageSize: 4,
     sortColumn: { path: "title", order: "asc" },
+    searchQuery: "",
+    selectedGenre: null,
   };
 
   componentDidMount() {
@@ -42,7 +45,11 @@ class Movies extends Component {
   };
 
   handleGenreSelect = (genre) => {
-    this.setState({ selectedGenre: genre, currentPage: 1 });
+    this.setState({ searchQuery: "", selectedGenre: genre, currentPage: 1 });
+  };
+
+  handleSearch = (query) => {
+    this.setState({ searchQuery: query, selectedGenre: null, currentPage: 1 });
   };
 
   handleSort = (sortColumn) => {
@@ -55,13 +62,16 @@ class Movies extends Component {
       currentPage,
       sortColumn,
       selectedGenre,
+      searchQuery,
       movies: allMovies,
     } = this.state;
 
-    const filtered =
-      selectedGenre && selectedGenre._id
-        ? allMovies.filter((m) => m.genre._id === selectedGenre._id)
-        : allMovies;
+    let filtered = allMovies;
+    if (searchQuery) {
+      filtered = allMovies.filter((m) => m.title.toLowerCase().startsWith(searchQuery.toLowerCase()));
+    } else if (selectedGenre && selectedGenre._id) {
+      filtered = allMovies.filter((m) => m.genre._id === selectedGenre._id);
+    }
 
     const sorted = _.orderBy(filtered, [sortColumn.path], [sortColumn.order]);
 
@@ -89,10 +99,11 @@ class Movies extends Component {
             />
           </div>
           <div className='col'>
-            <NavLink className='nav-item nav-link' to='/movies/new'>
+            <Link className='btn btn-primary' to='/movies/new'>
               <PrimaryButton label='New Movie' />
-            </NavLink>
+            </Link>
             <p>Showing {totalCount} movies in the database.</p>
+            <SearchBox value={this.state.searchQuery} onChange={this.handleSearch} />
             <MoviesTable
               movies={movies}
               sortColumn={sortColumn}
